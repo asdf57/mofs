@@ -6,5 +6,5 @@ clean:
 	rm myfs
 
 run:
-	@[ ! -d mpt ] && mkdir mpt
+	-@[ ! -d mpt ] && mkdir mpt
 	./myfs -f mpt

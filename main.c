@@ -11,20 +11,56 @@
 
 const int DIR_ENTRY_MAX = 128;
 
+#define HASH(str) ( \
+    { \
+        unsigned char *temp_str = (str); \
+        unsigned long result = 5381; \
+        int temp_c; \
+        while (temp_c = *temp_str++) \
+            result = ((result << 5) + result) + temp_c; \
+        result; \
+    } \
+)
+
 enum {
   DIR = 1,
   FIEL = 2,
 };
 
-/*
-int
-add_subentry(FSEntry *dir, FSEntry *e) {
-  if (dir->dir.entry_count < DIR_ENTRY_MAX)
-    dir->dir.children[dir->dir.entry_count] = e;
+typedef struct Qid {
+  unsigned long uid;
+  char *path;
+} Qid;
 
-  return 0;
+typedef struct FSEntry {
+  int magic;
+  char name[128];
+  Qid qid;
+  struct FSEntry *entries[128];
+  int num_entries;
+} FSEntry;
+
+
+unsigned long genhash(unsigned char*);
+
+const FSEntry rootdir[] = {
+  {DIR, "channel", {genhash("/channel"), "/channel"}, NULL, 0},
+};
+
+
+void 
+
+unsigned long
+genhash(unsigned char *str)
+{
+    unsigned long hash = 5381;
+    int c;
+
+    while ((c = *str++))
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+    return hash;
 }
-*/
 
 /*
   Get attribute file hook
@@ -54,6 +90,8 @@ do_getattr(const char *path, struct stat *st) {
   }
   else
     res = -ENOENT;
+
+  unsigned long hash = genhash(path);
 
   return res;
 }
@@ -90,6 +128,12 @@ static struct fuse_operations operations = {
   .read    = do_read,
   .create  = fs_create,
 };
+
+void fs_init() {
+  FSEntry dir[128];
+
+  add_entry(DIR, "channel", {genhash("/channel", "/channel"), path}, NULL, 0);
+}
 
 int main(int argc, char **argv) {
   return fuse_main(argc, argv, &operations, NULL);
