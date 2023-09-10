@@ -20,7 +20,7 @@ enum {
 int
 add_subentry(FSEntry *dir, FSEntry *e) {
   if (dir->dir.entry_count < DIR_ENTRY_MAX)
-    dir->dir.subentries[dir->dir.entry_count] = e;
+    dir->dir.children[dir->dir.entry_count] = e;
 
   return 0;
 }
