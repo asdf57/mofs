@@ -6,5 +6,7 @@ clean:
 	rm myfs
 
 run:
+	-@findmnt -T mpt && umount mpt
 	-@[ ! -d mpt ] && mkdir mpt
 	./myfs -f mpt
+	umount mpt
