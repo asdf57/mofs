@@ -10,135 +10,53 @@
 #include <errno.h>
 #include <stdarg.h>
 
+#include "utils.h"
+#include "file.h"
 #include "root.h"
+#include "channel.h"
 
 /*
   mofs - A statically allocated FS
 */
 
-
-#define NUM_HANDLERS 13
-#define MAX_ENTRIES 1024
-#define MAX_CHILDREN 1024 - 1
-
-enum {
-  MOFS_DIR = 1,
-  MOFS_FILE = 2,
-};
-
-typedef struct {
-    int (*getattr)(va_list args);
-    int (*readlink)(va_list args);
-    int (*mknod)(va_list args);
-    int (*mkdir)(va_list args);
-    int (*unlink)(va_list args);
-    int (*rmdir)(va_list args);
-    int (*symlink)(va_list args);
-    int (*rename)(va_list args);
-    int (*link)(va_list args);
-    int (*chmod)(va_list args);
-    int (*chown)(va_list args);
-    int (*truncate)(va_list args);
-    int (*open)(va_list args);
-	int (*readdir)(va_list args); 
-} handler_set;
-
-typedef int (*generic_handler)(va_list args);
-
-typedef enum {
-	GETATTR 	= 1 << 0,
-	READLINK	= 1 << 1,
-	MKNOD 		= 1 << 2,
-	MKDIR 		= 1 << 3,
-	UNLINK		= 1 << 4,
-	RMDIR		= 1 << 5,
-	SYMLINK		= 1 << 6,
-	RENAME		= 1 << 7,
-	LINK		= 1 << 8,
-	CHMOD		= 1 << 9,
-	CHOWN		= 1 << 10,
-	TRUNCATE	= 1 << 11,
-	OPEN		= 1 << 12,
-	READDIR		= 1 << 13,
-} FSop;
-
-typedef struct {
-	struct FSEntry *children[MAX_CHILDREN];
-	size_t num_children;
-} dir;
-
-typedef struct {
-	char data[1024];
-	size_t size;
-} file;
-
-typedef union {
-	file file;
-	dir dir;
-} FSContent;
-
-typedef struct {	
-	int type;
-	int id;
-	char name [256];
-	void *handlers[14];
-	//struct fuse_operations handlers;
-	struct FSEntry *parent;
-	FSContent content;
-} FSEntry;
-
-
-/*
-	INODE approach
-	==============
-	Current implementation is single-pass (no reusable table entries)
-*/
 FSEntry pool[MAX_ENTRIES];
 uint8_t pool_bitmap[MAX_ENTRIES / 8] = {0};
 FSEntry *fsentry_table[MAX_ENTRIES];
 
+
 int
-bitflag_to_idx(int val) {
+get_free_spot() {
 	int i;
 
-	for (i = 0; val; val >>= 1, i++)
-		if (val & 1)
-			return i;
-
-	return -1;
-}
-
-FSEntry*
-get_free_spot() {
-	int i, cur_bit;
-
-	for (int i = 0; i < MAX_ENTRIES; i++) {
-		if ((pool_bitmap[i >> 3] & 128 >> i % 8) == 0)
+	for (i = 0; i < MAX_ENTRIES; i++) {
+		if ((pool_bitmap[i >> 3] & 0x80 >> i % 8) == 0) {
+			pool_bitmap[i >> 3] |= 0x80 >> i % 8;
 			break;
+		}
   }
 
 	if (i == MAX_ENTRIES - 1) {
 		fprintf(stderr, "no free space in FS!\n");
-		return NULL;
+		return -1;
 	}
 
-	return &pool[i];
-	
+	return i;
 }
 
 FSEntry*
 add_entry(FSEntry entry) {
-	int i;
-	FSEntry *slot;
-	
-	if ((slot = get_free_spot()) == NULL)
+	int idx;
+
+	idx = 0;
+
+	if ((idx = get_free_spot()) == -1)
 		return NULL;
 
-	entry.id = i;
+	entry.id = idx;
 
-	*slot = entry;
+	pool[idx] = entry;
 
-	return slot;
+	return &pool[idx];
 }
 
 void
@@ -147,7 +65,7 @@ remove_entry(FSEntry *entry) {
 }
 
 FSEntry *
-lookup_entry(char *path) {
+lookup_entry(const char *path) {
 	FSEntry *marker;
 	char path_components[10][256];
 	char *cur_component;
@@ -166,7 +84,7 @@ lookup_entry(char *path) {
 		strcpy(path_components[num_components++], cur_component);
 		cur_component = strtok(NULL, "/");
 	}
-  
+
   while (marker != NULL || marker->type != MOFS_FILE) {
 		//for (int i = 0; )
 	}
@@ -174,7 +92,7 @@ lookup_entry(char *path) {
 }
 
 int
-execute_handler(FSEntry *entry, FSop op, int nargs, ...) {\
+execute_handler(FSEntry *entry, FSop op, int nargs, ...) {
 	int res;
 	generic_handler handler;
 	va_list args;
@@ -199,9 +117,9 @@ execute_handler(FSEntry *entry, FSop op, int nargs, ...) {\
 	handler = (generic_handler) entry->handlers[bitflag_to_idx(op)];
 
 	if (handler == NULL)
-		return execute_handler(entry->parent, op, nargs, args);
+		return execute_handler((FSEntry*) entry->parent, op, nargs, args);
 
-	res = handler(args);
+	res = handler(entry, args);
 	va_end(args);
 
 	return res;
@@ -210,6 +128,7 @@ execute_handler(FSEntry *entry, FSop op, int nargs, ...) {\
 int
 fs_getattr(const char *path, struct stat *st) {
 	FSEntry *entry = lookup_entry(path);
+	printf("path selected for gettr: %s\n", entry->name);
 	return execute_handler(entry, GETATTR, 2, path, st);
 }
 
@@ -235,9 +154,9 @@ fs_utimens(const char *path, const struct timespec ts[2]) {
 }
 
 void
-create_entry(FSEntry *entry, int type, char *name, handler_set handlers, FSEntry *parent, FSContent content) {
+create_entry(FSEntry *entry, int type, const char *name, handler_set handlers, FSEntry *parent, FSContent content) {
 	entry->type = type;
-	entry->id = NULL;
+	entry->id = 0;
 	strcpy(entry->name, name);
 
 	entry->handlers[bitflag_to_idx(GETATTR)] = handlers.getattr;
@@ -274,13 +193,21 @@ static struct fuse_operations operations = {
 
 int
 main(int argc, char **argv) {
-	FSEntry root;
+	FSEntry root, channel;
 	create_entry(
 		&root,
 		MOFS_DIR,
 		"/",
 		(handler_set) { .getattr = root_getattr, .readdir = root_readdir },
 		NULL,
+		(FSContent) {.dir = {.children = {&channel}, .num_children = 1}});
+
+	create_entry(
+		&channel,
+		MOFS_DIR,
+		"/channel",
+		(handler_set) { .getattr = channel_getattr, .readdir = channel_readdir },
+		&root,
 		(FSContent) {.dir = NULL});
 
   	return fuse_main(argc, argv, &operations, NULL);
