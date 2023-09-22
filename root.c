@@ -9,7 +9,9 @@
 #include <stdarg.h>
 #include <sys/stat.h>
 
-int root_getattr(va_list args) {
+#include "file.h"
+
+int root_getattr(FSEntry *entry, va_list args) {
 	const char *path;
 	struct stat *st;
 
@@ -33,7 +35,7 @@ int root_getattr(va_list args) {
 	return 0;
 }
 
-int root_readdir(va_list args) {
+int root_readdir(FSEntry *entry, va_list args) {
 	const char *path;
 	void *buffer;
 	fuse_fill_dir_t filler;
@@ -51,6 +53,9 @@ int root_readdir(va_list args) {
 
 	filler(buffer, ".", NULL, 0);
 	filler(buffer, "..", NULL, 0);
+
+	for (int i = 0; i < entry->content.dir.num_children; i++)
+		filler(buffer, entry->content.dir.children[i]->name+1, NULL, 0);
 
 	return 0;
 }
