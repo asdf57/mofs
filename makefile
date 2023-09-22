@@ -1,5 +1,5 @@
 all:
-	gcc main.c root.c channel.c utils.c -o myfs `pkg-config fuse --cflags --libs`
+	gcc src/main.c src/root.c src/channel.c src/utils.c -o myfs `pkg-config fuse --cflags --libs`
 
 clean:
 	rm -rf mpt
