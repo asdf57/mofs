@@ -1,0 +1,1 @@
+int bitflag_to_idx(int);
