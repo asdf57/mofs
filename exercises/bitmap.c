@@ -40,6 +40,17 @@ void generic_bitmap_reading() {
     printf("Bit #%d: %d\n", i, (bitmap[i >> 3] & 128 >> i % 8) > 0 ? 1 : 0);
   }
 }
+
+// As a challenge, here's a way to remove the mod usage
+void generic_bitmap_reading_without_mod() {
+  // Set a few bits in different bytes
+  bitmap[0] = 0b11010101;
+  bitmap[3] = 0b11000011;
+
+  for (int i = 0; i < BITMAP_SIZE; i++) {
+    printf("Bit #%d: %d\n", i, (bitmap[i >> 3] & 128 >> i & 7) > 0 ? 1 : 0);
+  }
+}
 // And as a *challenge*, I also added bitmap logic for heap-based allocations.
 // No real purpose since it's logic is pretty much the same as with the generic
 // bitmap reading.
@@ -64,6 +75,8 @@ int main() {
   second_improved_read_from_first_bitmap();
   printf("\n");
   generic_bitmap_reading();
+  printf("\n");
+  generic_bitmap_reading_without_mod();
   printf("\n");
   heap_based_generic_bitmap_reading();
 }
