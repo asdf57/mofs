@@ -22,7 +22,9 @@ int root_getattr(FSEntry *entry, va_list args) {
 	st->st_gid = getgid();
 	st->st_atime = time(NULL);
 	st->st_mtime = time(NULL);
-	
+
+	printf("root_getattr: %s\n", path);
+
 	if (strcmp(path, "/") == 0) {
     	st->st_mode = S_IFDIR | 0755;
    		st->st_nlink = 2;
@@ -54,8 +56,39 @@ int root_readdir(FSEntry *entry, va_list args) {
 	filler(buffer, ".", NULL, 0);
 	filler(buffer, "..", NULL, 0);
 
-	for (int i = 0; i < entry->content.dir.num_children; i++)
-		filler(buffer, entry->content.dir.children[i]->name+1, NULL, 0);
+	printf("num children: %d\n", entry->content.dir.num_children);
+
+	for (int i = 0; i < entry->content.dir.num_children; i++) {
+		printf("[root_readdir] child name: %s\n", entry->content.dir.children[i]->name);
+		filler(buffer, entry->content.dir.children[i]->path+1, NULL, 0);
+	}
 
 	return 0;
 }
+
+int
+root_open(FSEntry *entry, va_list args) {
+	const char *path;
+	struct fuse_file_info *info;
+
+	path = va_arg(args, const char *);
+	info = va_arg(args, struct fuse_file_info*);
+
+	return 0;
+}
+
+int
+root_create(FSEntry *entry, va_list args) {
+	const char *path;
+	mode_t mode;
+	struct fuse_file_info *info;
+
+	path = va_arg(args, const char *);
+	mode = va_arg(args, mode_t);
+	info = va_arg(args, struct fuse_file_info*);
+
+	printf("in here\n\n\n\n\n");
+
+	return 0;
+}
+
