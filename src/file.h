@@ -12,8 +12,8 @@
 #include <stdarg.h>
 #include <sys/stat.h>
 
-
-#define NUM_HANDLERS 13
+#define FILE_OFFSET_BITS 64
+#define NUM_HANDLERS 17
 #define MAX_ENTRIES 1024
 #define MAX_CHILDREN 1024 - 1
 
@@ -39,8 +39,9 @@ typedef union {
 typedef struct FSEntry {
 	int type;
 	int id;
-	char name [256];
-	void *handlers[14];
+	char name [128];
+	char path [256];
+	void *handlers[NUM_HANDLERS];
 	struct FSEntry *parent;
 	FSContent content;
 } FSEntry;
@@ -59,7 +60,10 @@ typedef struct {
     int (*chown)(FSEntry *entry, va_list args);
     int (*truncate)(FSEntry *entry, va_list args);
     int (*open)(FSEntry *entry, va_list args);
-	int (*readdir)(FSEntry *entry, va_list args); 
+    int (*readdir)(FSEntry *entry, va_list args);
+    int (*read)(FSEntry *entry, va_list args);
+    int (*utimens)(FSEntry *entry, va_list args);
+    int(*create)(FSEntry *entry, va_list args);
 } handler_set;
 
 typedef int (*generic_handler)(FSEntry *entry, va_list args);
@@ -79,6 +83,21 @@ typedef enum {
 	TRUNCATE	= 1 << 11,
 	OPEN		= 1 << 12,
 	READDIR		= 1 << 13,
+	READ		= 1 << 14,
+	UTIMENS		= 1 << 15,
+	CREATE = 1 << 16,
+	NUM_OPS,
 } FSop;
+
+extern const char *op_names[NUM_OPS];
+extern FSEntry pool[MAX_ENTRIES];
+extern uint8_t pool_bitmap[MAX_ENTRIES / 8];
+extern FSEntry *fsentry_table[MAX_ENTRIES];
+
+FSEntry* add_entry(FSEntry entry);
+FSEntry * get_closest_entry(const char *path);
+int execute_handler(FSEntry *entry, FSop op, int nargs, ...);
+void create_entry(FSEntry *entry, int type, const char *path, handler_set handlers, FSEntry *parent, FSContent content);
+int get_free_spot();
 
 #endif
