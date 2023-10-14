@@ -1,6 +1,7 @@
 #include "file.h"
 #include "utils.h"
 #include "logger.h"
+#include <stdarg.h>
 
 const char *op_names[NUM_OPS] = {
 	"GETATTR",
@@ -84,17 +85,13 @@ get_closest_entry(const char *path) {
 }
 
 int
-execute_handler(FSEntry *entry, FSop op, int nargs, ...) {
-	int res;
+execute_handler_helper(FSEntry *entry, FSop op, int nargs, va_list args) {
 	generic_handler handler;
-	va_list args;
-	va_start(args, nargs);
 
 	logger(INFO, "[execute_handler] Provided entry w/ name %s\n", entry->name);
   logger(INFO, "Specified operation: %s\n", op_names[bitflag_to_idx(op)]);
 
 	if (nargs == 0) {
-		va_end(args);
 		fprintf(stderr, "no args passed for FUSE handler!\n");
 		return -1;
 	}
@@ -113,10 +110,20 @@ execute_handler(FSEntry *entry, FSop op, int nargs, ...) {
 	printf("Retrieved handler: 0x%x\n", handler);
 	if (handler == NULL) {
 		printf("recur for %s on operation %d (with parent: %s)\n", entry->name, bitflag_to_idx(op), entry->parent->name);
-		return execute_handler( entry->parent, op, nargs, args);
+		return execute_handler_helper( entry->parent, op, nargs, args);
 	}
 
-	res = handler(entry, args);
+	return handler(entry, args);
+
+}
+
+int
+execute_handler(FSEntry *entry, FSop op, int nargs, ...) {
+	int res;
+	va_list args;
+
+	va_start(args, nargs);
+	res = execute_handler_helper(entry, op, nargs, args);
 	va_end(args);
 
 	return res;
