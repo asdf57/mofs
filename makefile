@@ -16,6 +16,7 @@ $(EXC): src/main.c src/root.c src/channel.c src/utils.c src/file.c src/logger.c
 build: $(EXC)
 
 clean:
+	findmnt -T $(MNT) && (umount $(MNT) || true) || true
 	rm -rf $(MNT)
 	rm -rf $(OUT)
 
