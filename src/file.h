@@ -85,7 +85,7 @@ typedef enum {
 	READDIR		= 1 << 13,
 	READ		= 1 << 14,
 	UTIMENS		= 1 << 15,
-	CREATE = 1 << 16,
+	CREATE 		= 1 << 16,
 	NUM_OPS,
 } FSop;
 
