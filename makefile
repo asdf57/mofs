@@ -10,7 +10,7 @@ EXC=$(OUT)/myfs
 all: clean build run
 
 $(EXC): src/main.c src/root.c src/channel.c src/utils.c src/file.c src/logger.c
-	[ -d $(BIN) ] || mkdir -p $(BIN)
+	mkdir -p $(BIN)
 	${CC} -o $@ $^ ${CMDS}
 
 build: $(EXC)
@@ -22,6 +22,6 @@ clean:
 
 run: build
 	findmnt -T $(MNT) && (umount $(MNT) || true) || true
-	[ -d $(MNT) ] || mkdir $(MNT)
+	mkdir -p $(MNT)
 	$(EXC) -f $(MNT)
 	umount $(MNT)
