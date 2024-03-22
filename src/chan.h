@@ -1,5 +1,5 @@
-#ifndef ROOT_H
-#define ROOT_H
+#ifndef CHAN_H
+#define CHAN_H
 
 #define FUSE_USE_VERSION 31
 #define FILE_OFFSET_BITS 64
@@ -13,6 +13,6 @@
 #include "file.h"
 #include "logger.h"
 
-extern FSE rootentry;
+extern FSE chanentry;
 
 #endif

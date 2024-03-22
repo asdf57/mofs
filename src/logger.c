@@ -2,9 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdarg.h>
-
 #include "logger.h"
-
 
 const size_t ISO_FMT_SIZE = 20;
 

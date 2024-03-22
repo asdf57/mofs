@@ -9,9 +9,9 @@ EXC=$(OUT)/myfs
 
 all: clean build run
 
-$(EXC): src/main.c src/root.c src/channel.c src/utils.c src/file.c src/logger.c
+$(EXC): src/main.c src/chan.c src/hash.c src/file.c src/logger.c src/root.c
 	mkdir -p $(BIN)
-	${CC} -o $@ $^ ${CMDS}
+	${CC} -g -o $@ $^ ${CMDS}
 
 build: $(EXC)
 
