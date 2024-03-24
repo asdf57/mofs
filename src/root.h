@@ -14,5 +14,6 @@
 #include "logger.h"
 
 extern FSE rootentry;
+FSE *rootregentries();
 
 #endif

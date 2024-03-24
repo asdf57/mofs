@@ -20,15 +20,13 @@ getfse(const char *path)
     return fsehashtab[hash];
 }
 
-void
-addfse(const char *path, FSE *entry)
-{
-    //Used to dynamically add a file system entry
-    unsigned long hash;
-
-    logger(INFO, "[addfse] path: %s\n", path);
-
-    hash = genhash(path);
-    logger(INFO, "[addfse] hash: %lu\n", hash);
+FSE*
+addfse(const char *path, FSE *parent, FST type, struct fuse_operations *handlers) {
+    unsigned long hash = genhash(path);
+    FSE *entry = malloc(sizeof(FSE));
+    entry->type = type;
+    entry->parent = parent;
+    entry->handlers = handlers;
     fsehashtab[hash] = entry;
+    return entry;
 }

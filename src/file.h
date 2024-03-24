@@ -1,6 +1,7 @@
 #ifndef FILE_H
 #define FILE_H
 
+#include <stdlib.h>
 #include <stddef.h>
 #include "logger.h"
 #include "hash.h"
@@ -26,5 +27,6 @@ struct FSE {
 extern FSE *fsehashtab[NENTRIES];
 
 FSE *getfse(const char *);
+FSE* addfse(const char *, FSE *, FST, struct fuse_operations *);
 
 #endif

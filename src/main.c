@@ -15,7 +15,6 @@
 static int
 fsgetattr(const char *path, struct stat *st) {
     FSE *entry;
-    unsigned long hash;
 
     logger(INFO, "[fs_getattr] path: %s\n", path);
 
@@ -25,7 +24,9 @@ fsgetattr(const char *path, struct stat *st) {
         return -ENOENT;
     }
 
-    if (entry->handlers->getattr == NULL) {
+    printf("entry->type: %p\n", entry->type);
+
+    if (entry->handlers == NULL || entry->handlers->getattr == NULL) {
         return entry->parent->handlers->getattr(path, st);
     }
 
@@ -35,12 +36,11 @@ fsgetattr(const char *path, struct stat *st) {
 static int
 fsreaddir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
     FSE *entry;
-    unsigned long hash;
-
+ 
     logger(INFO, "[fs_readdir] path: %s\n", path);
 
     entry = getfse(path);
-    if (entry == NULL) {
+    if (entry->handlers == NULL || entry == NULL) {
         return -ENOENT;
     }
 
@@ -54,12 +54,11 @@ fsreaddir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, str
 static int
 fsread(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
     FSE *entry;
-    unsigned long hash;
 
     logger(INFO, "[fs_read] path: %s\n", path);
 
     entry = getfse(path);
-    if (entry == NULL) {
+    if (entry->handlers == NULL || entry == NULL) {
         return -ENOENT;
     }
 
@@ -78,9 +77,10 @@ static struct fuse_operations operations = {
 
 void
 initfs() {
-    logger(INFO, "[initfs]: hash: %lu\n", genhash("/"));
-    fsehashtab[genhash("/")] = &rootentry;
-    fsehashtab[genhash("/chan")] = &chanentry;
+    FSE *rootdir;
+
+    rootdir = rootregentries();
+    chanregentries(rootdir);
 }
 
 int

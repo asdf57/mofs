@@ -14,5 +14,6 @@
 #include "logger.h"
 
 extern FSE chanentry;
+FSE *chanregentries(FSE*);
 
 #endif

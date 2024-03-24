@@ -31,7 +31,7 @@ changetattr(const char *path, struct stat *st) {
     logger(INFO, "[changetattr] path: %s\n", path);
 
     //If we're an actual root call and not a passed up call
-    if (strcmp(path, "/channel") == 0) {
+    if (strcmp(path, "/chan") == 0) {
     	st->st_mode = S_IFDIR | 0755;
         st->st_size = 1337;
         st->st_nlink = 2;
@@ -51,12 +51,12 @@ chanreaddir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, s
     logger(INFO, "[chanreaddir] path: %s\n", path);
 
     //Passed up calls
-    if (strcmp(path, "/channel") != 0)
+    if (strcmp(path, "/chan") != 0)
         return -ENOENT;
 
     filler(buf, ".", NULL, 0);
     filler(buf, "..", NULL, 0);
-    filler(buf, hello_path + 1, NULL, 0);
+    filler(buf, "/1" + 1, NULL, 0);
 
     return 0;
 }
@@ -95,4 +95,15 @@ chanread(const char *path, char *buf, size_t size, off_t offset, struct fuse_fil
         size = 0;
 
     return size;
+}
+
+FSE*
+chanregentries(FSE *parent) {
+    FSE *dir;
+
+    dir = addfse("/chan", parent, QDIR, &chanhandlers);
+    addfse("/chan/1", dir, QFILE, NULL);
+    addfse("/chan/2", dir, QFILE, NULL);
+
+    return dir;
 }

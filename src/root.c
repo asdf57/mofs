@@ -35,6 +35,14 @@ rootgetattr(const char *path, struct stat *st) {
     	st->st_mode = S_IFDIR | 0755;
         st->st_size = 1337;
         st->st_nlink = 2;
+    } else if (strcmp(path, hello_path) == 0) {
+        st->st_mode = S_IFREG | 0444;
+        st->st_size = strlen(hello_str);
+        st->st_nlink = 1;
+    } else if (strcmp(path, "/cmd") == 0) {
+        st->st_mode = S_IFREG | 0444;
+        st->st_size = 1337;
+        st->st_nlink = 2;
     } else {
         //passed up call
         return -ENOENT;
@@ -54,6 +62,9 @@ rootreaddir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, s
     if (strcmp(path, "/") != 0)
         return -ENOENT;
 
+    filler(buf, "/cmd"+1, NULL, 0);
+    filler(buf, "/chan"+1, NULL, 0);
+
     return 0;
 }
 
@@ -72,4 +83,14 @@ rootread(const char *path, char *buf, size_t size, off_t offset, struct fuse_fil
     logger(INFO, "[root_read] path: %s\n", path);
 
     return -ENOENT;
+}
+
+FSE*
+rootregentries() {
+    FSE *dir;
+
+    dir = addfse("/", NULL, QDIR, &roothandlers);
+    addfse("/cmd", dir, QFILE, NULL);
+
+    return dir;
 }
