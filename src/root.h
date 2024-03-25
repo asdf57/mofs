@@ -9,11 +9,14 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdio.h>
 #include "hash.h"
 #include "file.h"
 #include "logger.h"
 
-extern FSE rootentry;
+extern char *rootnames[3];
+extern FSE root;
+extern FSE *rootdir[];
 FSE *rootregentries();
 
 #endif

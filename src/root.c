@@ -1,7 +1,5 @@
 #include "root.h"
-
-static const char *hello_str = "Hello, World!\n";
-static const char *hello_path = "/hello";
+#include "chan.h"
 
 int rootgetattr(const char *path, struct stat *st);
 int rootreaddir(const char *, void *, fuse_fill_dir_t, off_t, struct fuse_file_info *);
@@ -15,10 +13,9 @@ struct fuse_operations roothandlers = {
     .read = rootread
 };
 
-FSE rootentry = {
-    NULL,
-    QDIR,
-    &roothandlers,
+FSE root = {"/", "", NULL, QDIR, &roothandlers};
+FSE *rootdir[] = {
+    &chan,
 };
 
 int
@@ -30,29 +27,20 @@ rootgetattr(const char *path, struct stat *st) {
 
     logger(INFO, "[root_getattr] path: %s\n", path);
 
-    //If we're an actual root call and not a passed up call
     if (strcmp(path, "/") == 0) {
     	st->st_mode = S_IFDIR | 0755;
         st->st_size = 1337;
         st->st_nlink = 2;
-    } else if (strcmp(path, hello_path) == 0) {
-        st->st_mode = S_IFREG | 0444;
-        st->st_size = strlen(hello_str);
-        st->st_nlink = 1;
-    } else if (strcmp(path, "/cmd") == 0) {
-        st->st_mode = S_IFREG | 0444;
-        st->st_size = 1337;
-        st->st_nlink = 2;
-    } else {
-        //passed up call
-        return -ENOENT;
+        return 0;
     }
 
-    return 0;
+    return -ENOENT;
 }
 
 int
 rootreaddir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
+    int i;
+
     (void) offset;
     (void) fi;
 
@@ -62,8 +50,13 @@ rootreaddir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, s
     if (strcmp(path, "/") != 0)
         return -ENOENT;
 
-    filler(buf, "/cmd"+1, NULL, 0);
-    filler(buf, "/chan"+1, NULL, 0);
+    filler(buf, ".", NULL, 0);
+    filler(buf, "..", NULL, 0);
+
+    for (i = 0; i < sizeof(rootdir) / sizeof(rootdir[0]); i++) {
+        printf("registering rootdir[i]->path: %s\n", rootdir[i]->path);
+        filler(buf, rootdir[i]->path + 1, NULL, 0);
+    }
 
     return 0;
 }
@@ -85,12 +78,3 @@ rootread(const char *path, char *buf, size_t size, off_t offset, struct fuse_fil
     return -ENOENT;
 }
 
-FSE*
-rootregentries() {
-    FSE *dir;
-
-    dir = addfse("/", NULL, QDIR, &roothandlers);
-    addfse("/cmd", dir, QFILE, NULL);
-
-    return dir;
-}
