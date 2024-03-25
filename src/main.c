@@ -36,7 +36,7 @@ static int
 fsreaddir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
     FSE *entry;
 
-    logger(INFO, "[fs_readdir] path: %s\n", path);
+    logger(INFO, "[fsreaddir] path: %s\n", path);
 
     entry = getfse(path);
     if (entry == NULL) {
@@ -55,7 +55,7 @@ static int
 fsread(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
     FSE *entry;
 
-    logger(INFO, "[fs_read] path: %s\n", path);
+    logger(INFO, "[fsread] path: %s\n", path);
 
     entry = getfse(path);
     if (entry == NULL) {
@@ -70,10 +70,91 @@ fsread(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_
     return entry->handlers->read(path, buf, size, offset, fi);
 }
 
+static int
+fswrite(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+    FSE *entry;
+
+    logger(INFO, "[fswrite] path: %s\n", path);
+
+    entry = getfse(path);
+    logger(INFO, "[fswrite] entry: %p\n", entry);
+    if (entry == NULL) {
+        return -ENOENT;
+    }
+
+    //Loop until we find the first handler that can fulfill the request
+    while (entry->handlers == NULL) {
+        entry = entry->parent;
+    }
+
+    return entry->handlers->write(path, buf, size, offset, fi);
+}
+
+static int
+fsopen(const char *path, struct fuse_file_info *fi) {
+    FSE *entry;
+
+    logger(INFO, "[fsopen] path: %s\n", path);
+
+    entry = getfse(path);
+    if (entry == NULL) {
+        return -ENOENT;
+    }
+
+    //Loop until we find the first handler that can fulfill the request
+    while (entry->handlers == NULL) {
+        entry = entry->parent;
+    }
+
+    return entry->handlers->open(path, fi);
+}
+
+static int
+fstruncate(const char *path, off_t size) {
+    FSE *entry;
+
+    logger(INFO, "[fstruncate] path: %s\n", path);
+
+    entry = getfse(path);
+    if (entry == NULL) {
+        return -ENOENT;
+    }
+
+    //Loop until we find the first handler that can fulfill the request
+    while (entry->handlers == NULL) {
+        entry = entry->parent;
+    }
+
+    return entry->handlers->truncate(path, size);
+}
+
+static int
+fsftruncate(const char *path, off_t size, struct fuse_file_info *fi) {
+    FSE *entry;
+
+    logger(INFO, "[fsftruncate] path: %s\n", path);
+
+    entry = getfse(path);
+    if (entry == NULL) {
+        return -ENOENT;
+    }
+
+    //Loop until we find the first handler that can fulfill the request
+    while (entry->handlers == NULL) {
+        entry = entry->parent;
+    }
+
+    return entry->handlers->ftruncate(path, size, fi);
+}
+
 static struct fuse_operations operations = {
     .getattr = fsgetattr,
     .readdir = fsreaddir,
     .read = fsread,
+    .write = fswrite,
+    .open = fsopen,
+    .truncate = fstruncate,
+    .ftruncate = fsftruncate,
 };
 
 void
