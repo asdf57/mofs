@@ -24,10 +24,9 @@ fsgetattr(const char *path, struct stat *st) {
         return -ENOENT;
     }
 
-    printf("entry->type: %p\n", entry->type);
-
-    if (entry->handlers == NULL || entry->handlers->getattr == NULL) {
-        return entry->parent->handlers->getattr(path, st);
+    //Loop until we find the first handler that can fulfill the request (root's handlers are always defined)
+    while (entry->handlers == NULL) {
+        entry = entry->parent;
     }
 
     return entry->handlers->getattr(path, st);
@@ -36,16 +35,17 @@ fsgetattr(const char *path, struct stat *st) {
 static int
 fsreaddir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
     FSE *entry;
- 
+
     logger(INFO, "[fs_readdir] path: %s\n", path);
 
     entry = getfse(path);
-    if (entry->handlers == NULL || entry == NULL) {
+    if (entry == NULL) {
         return -ENOENT;
     }
 
-    if (entry->handlers->readdir == NULL) {
-        return entry->parent->handlers->readdir(path, buf, filler, offset, fi);
+    //Loop until we find the first handler that can fulfill the request
+    while (entry->handlers == NULL) {
+        entry = entry->parent;
     }
 
     return entry->handlers->readdir(path, buf, filler, offset, fi);
@@ -58,12 +58,13 @@ fsread(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_
     logger(INFO, "[fs_read] path: %s\n", path);
 
     entry = getfse(path);
-    if (entry->handlers == NULL || entry == NULL) {
+    if (entry == NULL) {
         return -ENOENT;
     }
 
-    if (entry->handlers->readdir == NULL) {
-        return entry->parent->handlers->read(path, buf, size, offset, fi);
+    //Loop until we find the first handler that can fulfill the request
+    while (entry->handlers == NULL) {
+        entry = entry->parent;
     }
 
     return entry->handlers->read(path, buf, size, offset, fi);
@@ -77,10 +78,12 @@ static struct fuse_operations operations = {
 
 void
 initfs() {
-    FSE *rootdir;
-
-    rootdir = rootregentries();
-    chanregentries(rootdir);
+    regentry(&root);
+    regentries(rootdir, 1);
+    logger(INFO, "initialized root dir\n");
+    regentry(&chan);
+    regentries(chandir, 1);
+    logger(INFO, "initialized chan dir\n");
 }
 
 int
