@@ -9,11 +9,15 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdio.h>
 #include "hash.h"
 #include "file.h"
 #include "logger.h"
 
-extern FSE chanentry;
+extern struct fuse_operations chanhandlers;
+extern FSE chan;
+extern FSE *chandir[];
+
 FSE *chanregentries(FSE*);
 
 #endif

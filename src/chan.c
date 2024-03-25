@@ -1,4 +1,9 @@
 #include "chan.h"
+#include "root.h"
+
+/**
+ * Defines the handlers for the /chan directory
+*/
 
 static const char *hello_str = "Hello, World!\n";
 static const char *hello_path = "/hello";
@@ -15,10 +20,9 @@ struct fuse_operations chanhandlers = {
     .read = chanread
 };
 
-FSE chanentry = {
-    NULL,
-    QDIR,
-    &chanhandlers,
+FSE chan = {"/chan", "", &root, QDIR, &chanhandlers};
+FSE *chandir[] = {
+    &(FSE) {"/chan/clone", "clone", &chan, QFILE, NULL},
 };
 
 int
@@ -30,33 +34,45 @@ changetattr(const char *path, struct stat *st) {
 
     logger(INFO, "[changetattr] path: %s\n", path);
 
-    //If we're an actual root call and not a passed up call
+    /**
+     * Handles /chan, /chan/x, /chan/x/y, /chan/x/y/z/...
+    */
+
     if (strcmp(path, "/chan") == 0) {
     	st->st_mode = S_IFDIR | 0755;
-        st->st_size = 1337;
+        st->st_size = 1111;
         st->st_nlink = 2;
-    } else {
-        //passed up call
-        return -ENOENT;
+        return 0;
+    } else if (strcmp(path, "/chan/clone") == 0) {
+        st->st_mode = S_IFREG | 0755;
+        st->st_size = 0;
+        st->st_nlink = 1;
+        return 0;
     }
 
-    return 0;
+    return -ENOENT;
 }
 
 int
 chanreaddir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi) {
+    int i;
+
     (void) offset;
     (void) fi;
 
     logger(INFO, "[chanreaddir] path: %s\n", path);
 
     //Passed up calls
-    if (strcmp(path, "/chan") != 0)
+    if (strncmp(path, "/chan", 5) != 0)
         return -ENOENT;
 
     filler(buf, ".", NULL, 0);
     filler(buf, "..", NULL, 0);
-    filler(buf, "/1" + 1, NULL, 0);
+
+    for (i = 0; i < 1; i++) {
+        printf("Creating directory entry: %s\n", chandir[i]->path);
+        filler(buf, chandir[i]->name, NULL, 0);
+    }
 
     return 0;
 }
@@ -65,7 +81,6 @@ int
 chanopen(const char *path, struct fuse_file_info *fi) {
     logger(INFO, "[chanopen] path: %s\n", path);
 
-    //Passed up calls
     if (strcmp(path, "/chan") != 0)
         return -ENOENT;
 
@@ -83,8 +98,21 @@ chanread(const char *path, char *buf, size_t size, off_t offset, struct fuse_fil
     logger(INFO, "[chanread] path: %s\n", path);
 
     //Passed up calls
-    if(strcmp(path, "/chan") != 0)
+    if(strcmp(path, "/chan") != 0) {
+        // if (strcmp(path, channames[0]) != 0) {
+        //     len = strlen(hello_str);
+        //     if (offset < len) {
+        //         if (offset + size > len)
+        //             size = len - offset;
+        //         memcpy(buf, hello_str + offset, size);
+        //     } else
+        //         size = 0;
+
+        //     return size;
+        // }
+
         return -ENOENT;
+    }
 
     len = strlen(hello_str);
     if (offset < len) {
@@ -95,15 +123,4 @@ chanread(const char *path, char *buf, size_t size, off_t offset, struct fuse_fil
         size = 0;
 
     return size;
-}
-
-FSE*
-chanregentries(FSE *parent) {
-    FSE *dir;
-
-    dir = addfse("/chan", parent, QDIR, &chanhandlers);
-    addfse("/chan/1", dir, QFILE, NULL);
-    addfse("/chan/2", dir, QFILE, NULL);
-
-    return dir;
 }
