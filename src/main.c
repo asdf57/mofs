@@ -159,12 +159,8 @@ static struct fuse_operations operations = {
 
 void
 initfs() {
-    regentry(&root);
-    regentries(rootdir, 1);
-    logger(INFO, "initialized root dir\n");
-    regentry(&chan);
-    regentries(chandir, 1);
-    logger(INFO, "initialized chan dir\n");
+    genchanentries();
+    genrootentries();
 }
 
 int
