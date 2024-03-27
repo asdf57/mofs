@@ -15,8 +15,8 @@
 #include "logger.h"
 
 extern char *rootnames[3];
-extern FSE root;
-extern FSE *rootdir[];
-FSE *rootregentries();
+extern FSE *root;
+extern FSE *rootdir[1024];
+void genrootentries();
 
 #endif

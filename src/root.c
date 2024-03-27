@@ -13,10 +13,10 @@ struct fuse_operations roothandlers = {
     .read = rootread
 };
 
-FSE root = {"/", "", NULL, QDIR, &roothandlers};
-FSE *rootdir[] = {
-    &chan,
-};
+
+int nrootentries = 0;
+FSE *root;
+FSE *rootdir[1024];
 
 int
 rootgetattr(const char *path, struct stat *st) {
@@ -53,7 +53,7 @@ rootreaddir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, s
     filler(buf, ".", NULL, 0);
     filler(buf, "..", NULL, 0);
 
-    for (i = 0; i < sizeof(rootdir) / sizeof(rootdir[0]); i++) {
+    for (i = 0; i < nrootentries; i++) {
         printf("registering rootdir[i]->path: %s\n", rootdir[i]->path);
         filler(buf, rootdir[i]->path + 1, NULL, 0);
     }
@@ -78,3 +78,8 @@ rootread(const char *path, char *buf, size_t size, off_t offset, struct fuse_fil
     return -ENOENT;
 }
 
+void
+genrootentries() {
+    regentry((FSE) {"/", "", NULL, QDIR, &roothandlers});
+    rootdir[nrootentries++] = chan;
+}
