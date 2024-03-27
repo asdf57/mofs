@@ -15,9 +15,9 @@
 #include "logger.h"
 
 extern struct fuse_operations chanhandlers;
-extern FSE chan;
-extern FSE *chandir[];
+extern FSE *chan;
+extern FSE *chandir[1024];
 
-FSE *chanregentries(FSE*);
+void genchanentries();
 
 #endif
