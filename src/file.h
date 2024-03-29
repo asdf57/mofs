@@ -3,6 +3,9 @@
 
 #include <stdlib.h>
 #include <stddef.h>
+#include <sys/stat.h>
+#include <time.h>
+#include <unistd.h>
 #include "logger.h"
 #include "hash.h"
 
@@ -24,6 +27,7 @@ struct FSE {
     FSE *parent;
     FST type;
     struct fuse_operations *handlers;
+    struct stat properties;
 };
 
 extern FSE *fsehashtab[NENTRIES];
@@ -31,5 +35,6 @@ extern FSE *fsehashtab[NENTRIES];
 FSE *getfse(const char *);
 FSE *regentry(FSE);
 void regentries(FSE *[], int);
+struct stat genstat(FST type);
 
 #endif
