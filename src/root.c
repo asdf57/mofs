@@ -17,26 +17,6 @@ int nrootentries = 0;
 FSE *root;
 FSE *rootdir[1024];
 
-// int
-// rootgetattr(const char *path, struct stat *st) {
-//     st->st_uid = getuid();
-//     st->st_gid = getgid();
-//     st->st_atime = time(NULL);
-//     st->st_mtime = time(NULL);
-
-//     logger(INFO, "[root_getattr] path: %s\n", path);
-
-//     if (strcmp(path, "/") == 0) {
-//     	st->st_mode = S_IFDIR | 0755;
-//         st->st_size = 1337;
-//         st->st_nlink = 2;
-//         return 0;
-//     }
-
-//     return -ENOENT;
-// }
-
-
 int
 rootgetattr(const char *path, struct stat *st) {
     FSE *entry;
