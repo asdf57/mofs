@@ -13,6 +13,7 @@
 #include "hash.h"
 #include "file.h"
 #include "logger.h"
+#include "proto.h"
 
 extern struct fuse_operations chanhandlers;
 extern FSE *chan;

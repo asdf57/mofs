@@ -15,6 +15,7 @@ int chanread(const char *, char *, size_t, off_t, struct fuse_file_info *);
 int chanwrite(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
 int chantruncate(const char *path, off_t size);
 int chanftruncate(const char *path, off_t size, struct fuse_file_info *fi);
+int ischanpath(const char *);
 
 struct fuse_operations chanhandlers = {
     .getattr = changetattr,
@@ -79,6 +80,11 @@ int chanopen(const char *path, struct fuse_file_info *fi) {
             logger(INFO, "[chanopen] Opened /chan/clone for writing\n");
             return 0;
         }
+    } else if (ischanpath(path)) {
+        if ((fi->flags & O_ACCMODE) == O_WRONLY || (fi->flags & O_ACCMODE) == O_RDONLY || (fi->flags & O_ACCMODE) == O_RDWR) {
+            logger(INFO, "[chanopen] Opened channel\n");
+            return 0;
+        }
     }
 
     return -ENOENT;
@@ -86,14 +92,18 @@ int chanopen(const char *path, struct fuse_file_info *fi) {
 
 int
 chanread(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+    long chanid;
+    
     size_t len;
     (void) fi;
 
     logger(INFO, "[chanread] path: %s\n", path);
 
-    if (strcmp(path, "/chan/clone") == 0) {
-        len = strlen(hello_str);
+    size = -ENOENT;
 
+    len = strlen(hello_str);
+
+    if (strcmp(path, "/chan/clone") == 0) {
         if (offset < len) {
             if (offset + size > len)
                 size = len - offset;
@@ -101,13 +111,17 @@ chanread(const char *path, char *buf, size_t size, off_t offset, struct fuse_fil
         } else
             size = 0;
 
-        return size;
+    } else if (ischanpath(path)) {
+        logger(INFO, "[chanread] chan id read\n");
+        size = len;
+        memcpy(buf, hello_str + offset, size);
     }
 
-    return -ENOENT;
+    return size;
 }
 
 int chanwrite(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+    MOFSProto proto;
     FSE entry;
     long chanid;
     char chanpath[1024];
@@ -119,13 +133,9 @@ int chanwrite(const char *path, const char *buf, size_t size, off_t offset, stru
 
     if(strcmp(path, "/chan/clone") == 0) {
         printf("%.*s", (int)size, buf);
-
         chanid = strtol(buf, NULL, 10);
-
         logger(INFO, "Registered ID %d\n", chanid);
-
         sprintf(chanpath, "/chan/%d", chanid);
-
         strcpy(entry.path, chanpath);
         sprintf(entry.name, "%ld", chanid);
         entry.parent = chan;
@@ -133,8 +143,14 @@ int chanwrite(const char *path, const char *buf, size_t size, off_t offset, stru
         entry.handlers = NULL;
         entry.properties = genstat(QFILE);
         chandir[nchanentries++] = regentry(entry);
-
         return size;
+    } else if (ischanpath(path)) {
+        chanid = strtol(path+6, NULL, 10);
+        proto.data = buf;
+        proto.size = size;
+        proto.chanid = chanid;
+        printf("Channel %ld: %.*s", proto.chanid, (int)proto.size, proto.data);
+        return (int)proto.size;
     }
 
     return -ENOENT;
@@ -154,4 +170,28 @@ void
 genchanentries() {
     chan = regentry((FSE) {"/chan", "", root, QDIR, &chanhandlers, genstat(QDIR)});
     chandir[nchanentries++] = regentry((FSE) {"/chan/clone", "clone", chan, QFILE, NULL, genstat(QFILE)});
+}
+
+int
+ischanpath(const char *path) {
+    FSE *e;
+    long chanid;
+    char *endptr;
+
+    e = getfse(path);
+    if (e == NULL)
+        return 0;
+
+    chanid = strtol(path+6, &endptr, 10);
+    
+    if (endptr == path+6)
+        return 0;
+
+    if (chanid <= 0)
+        return 0;
+
+    if (*endptr != '\0')
+        return 0;
+
+    return 1;
 }
