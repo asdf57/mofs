@@ -32,26 +32,19 @@ FSE *chandir[1024];
 
 int
 changetattr(const char *path, struct stat *st) {
-    st->st_uid = getuid();
-    st->st_gid = getgid();
-    st->st_atime = time(NULL);
-    st->st_mtime = time(NULL);
+    FSE *entry;
 
     logger(INFO, "[changetattr] path: %s\n", path);
 
-    if (strcmp(path, "/chan") == 0) {
-    	st->st_mode = S_IFDIR | 0755;
-        st->st_size = 1111;
-        st->st_nlink = 2;
-        return 0;
-    } else if (strcmp(path, "/chan/clone") == 0) {
-        st->st_mode = S_IFREG | 0444;
-        st->st_size = strlen(hello_str);
-        st->st_nlink = 1;
-        return 0;
+    entry = getfse(path);
+    if (entry == NULL) {
+        logger(INFO, "[changetattr] path: %s not found\n", path);
+        return -ENOENT;
     }
 
-    return -ENOENT;
+    *st = entry->properties;
+
+    return 0;
 }
 
 int
@@ -138,6 +131,7 @@ int chanwrite(const char *path, const char *buf, size_t size, off_t offset, stru
         entry.parent = chan;
         entry.type = QFILE;
         entry.handlers = NULL;
+        entry.properties = genstat(QFILE);
         chandir[nchanentries++] = regentry(entry);
 
         return size;
@@ -158,6 +152,6 @@ int chanftruncate(const char *path, off_t size, struct fuse_file_info *fi) {
 
 void
 genchanentries() {
-    chan = regentry((FSE) {"/chan", "", root, QDIR, &chanhandlers});
-    chandir[nchanentries++] = regentry((FSE) {"/chan/clone", "clone", chan, QFILE, NULL});
+    chan = regentry((FSE) {"/chan", "", root, QDIR, &chanhandlers, genstat(QDIR)});
+    chandir[nchanentries++] = regentry((FSE) {"/chan/clone", "clone", chan, QFILE, NULL, genstat(QFILE)});
 }

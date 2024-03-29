@@ -13,28 +13,45 @@ struct fuse_operations roothandlers = {
     .read = rootread
 };
 
-
 int nrootentries = 0;
 FSE *root;
 FSE *rootdir[1024];
 
+// int
+// rootgetattr(const char *path, struct stat *st) {
+//     st->st_uid = getuid();
+//     st->st_gid = getgid();
+//     st->st_atime = time(NULL);
+//     st->st_mtime = time(NULL);
+
+//     logger(INFO, "[root_getattr] path: %s\n", path);
+
+//     if (strcmp(path, "/") == 0) {
+//     	st->st_mode = S_IFDIR | 0755;
+//         st->st_size = 1337;
+//         st->st_nlink = 2;
+//         return 0;
+//     }
+
+//     return -ENOENT;
+// }
+
+
 int
 rootgetattr(const char *path, struct stat *st) {
-    st->st_uid = getuid();
-    st->st_gid = getgid();
-    st->st_atime = time(NULL);
-    st->st_mtime = time(NULL);
+    FSE *entry;
 
-    logger(INFO, "[root_getattr] path: %s\n", path);
+    logger(INFO, "[rootgetattr] path: %s\n", path);
 
-    if (strcmp(path, "/") == 0) {
-    	st->st_mode = S_IFDIR | 0755;
-        st->st_size = 1337;
-        st->st_nlink = 2;
-        return 0;
+    entry = getfse(path);
+    if (entry == NULL) {
+        logger(INFO, "[rootgetattr] path: %s not found\n", path);
+        return -ENOENT;
     }
 
-    return -ENOENT;
+    *st = entry->properties;
+
+    return 0;
 }
 
 int
@@ -80,6 +97,6 @@ rootread(const char *path, char *buf, size_t size, off_t offset, struct fuse_fil
 
 void
 genrootentries() {
-    regentry((FSE) {"/", "", NULL, QDIR, &roothandlers});
+    regentry((FSE) {"/", "", NULL, QDIR, &roothandlers, genstat(QDIR)});
     rootdir[nrootentries++] = chan;
 }
