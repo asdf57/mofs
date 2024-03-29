@@ -3,4 +3,4 @@ mofs is a FUSE-based filesystem developed to experiment with userland-based Linu
 1. A virtual channel based system allowing for publish-subscribe fanout messages to be sent between devices on my LAN.
 
 # Demo
-<a href="https://asciinema.org/a/9rTrWDBjjIi53RRePkts5LxCe" target="_blank"><img src="https://asciinema.org/a/9rTrWDBjjIi53RRePkts5LxCe.svg" /></a>
+![Alt Text](demo.gif)
