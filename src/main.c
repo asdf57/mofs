@@ -159,8 +159,8 @@ static struct fuse_operations operations = {
 
 void
 initfs() {
-    genchanentries();
-    genrootentries();
+    initchan();
+    initroot();
 }
 
 int

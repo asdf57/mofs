@@ -10,6 +10,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include "hash.h"
 #include "file.h"
 #include "logger.h"
@@ -19,6 +22,6 @@ extern struct fuse_operations chanhandlers;
 extern FSE *chan;
 extern FSE *chandir[1024];
 
-void genchanentries();
+void initchan();
 
 #endif

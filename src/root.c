@@ -76,7 +76,7 @@ rootread(const char *path, char *buf, size_t size, off_t offset, struct fuse_fil
 }
 
 void
-genrootentries() {
+initroot() {
     regentry((FSE) {"/", "", NULL, QDIR, &roothandlers, genstat(QDIR)});
     rootdir[nrootentries++] = chan;
 }

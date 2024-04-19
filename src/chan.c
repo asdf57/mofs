@@ -4,7 +4,6 @@
 /**
  * Defines the handlers for the /chan directory
 */
-
 static const char *hello_str = "Hello, World!\n";
 static const char *hello_path = "/hello";
 
@@ -167,7 +166,7 @@ int chanftruncate(const char *path, off_t size, struct fuse_file_info *fi) {
 }
 
 void
-genchanentries() {
+initchan() {
     chan = regentry((FSE) {"/chan", "", root, QDIR, &chanhandlers, genstat(QDIR)});
     chandir[nchanentries++] = regentry((FSE) {"/chan/clone", "clone", chan, QFILE, NULL, genstat(QFILE)});
 }

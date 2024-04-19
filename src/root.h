@@ -17,6 +17,6 @@
 extern char *rootnames[3];
 extern FSE *root;
 extern FSE *rootdir[1024];
-void genrootentries();
+void initroot();
 
 #endif
